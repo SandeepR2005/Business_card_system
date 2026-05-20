@@ -17,6 +17,13 @@ export const EVA = {
   dangerSoft: '#FCE5E5',
   info: '#2E7AE6',
   infoSoft: '#E1ECFB',
+  // Aliases used across screens
+  bgColor: '#F5F6F2',
+  text: '#0E1410',
+  border: '#E6E8E2',
+  greyText: '#6A7567',
+  orange: '#E08A1E',
+  red: '#D93B3B',
 };
 
 export const SCORE_FIELDS = [

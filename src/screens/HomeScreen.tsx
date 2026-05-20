@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,21 +8,32 @@ import {
   FlatList,
   SafeAreaView,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { EVA } from '../utils/theme';
 import { AppBar, Icon, Card, Chip } from '../components/ui';
-import { SEED_LEADS } from '../utils/data';
 import { Lead } from '../types';
+import StorageService from '../utils/storage';
 
 export default function HomeScreen({ navigation }: any) {
-  const [leads, setLeads] = useState<Lead[]>(SEED_LEADS);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing'>('synced');
+
+  // Reload leads from storage each time this screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      StorageService.getLeads().then(setLeads).catch(console.error);
+    }, []),
+  );
 
   const newLeads = leads.filter((l) => l.status === 'new');
   const recentActivity = leads.flatMap((l) => l.activity.slice(0, 2)).slice(0, 5);
 
   const handleRefresh = () => {
     setSyncStatus('syncing');
-    setTimeout(() => setSyncStatus('synced'), 1500);
+    StorageService.getLeads()
+      .then(setLeads)
+      .catch(console.error)
+      .finally(() => setSyncStatus('synced'));
   };
 
   const handleLeadPress = (leadId: string) => {

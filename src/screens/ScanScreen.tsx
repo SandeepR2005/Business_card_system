@@ -15,7 +15,7 @@ import OCRService from '../utils/ocr';
 
 export default function ScanScreen({ navigation }: any) {
   const [permission, requestPermission] = useCameraPermissions();
-  const [cameraType, setCameraType] = useState<CameraType>('back');
+  const [facing, setFacing] = useState<CameraType>('back');
   const cameraRef = useRef<CameraView>(null);
   const [isTakingPhoto, setIsTakingPhoto] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -31,21 +31,46 @@ export default function ScanScreen({ navigation }: any) {
 
     try {
       setIsTakingPhoto(true);
-      const photo = await cameraRef.current.takePictureAsync();
+      // Request base64 from camera directly — avoids expo-file-system native module issues.
+      // quality: 0.15 compresses the photo from ~6MB → ~200-400KB, well within OCR.space's 1.5MB limit.
+      // Text remains perfectly readable for OCR at this quality.
+      const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.15 });
       
       if (!photo?.uri) {
         Alert.alert('Error', 'Failed to capture image');
         return;
       }
 
+      if (!photo?.base64) {
+        Alert.alert('Error', 'Could not read image data. Please try again.');
+        return;
+      }
+
       // Show processing indicator
       setIsProcessing(true);
       
-      // Extract card data using OCR service
-      const extracted = await OCRService.extractCard(photo.uri);
+      // Extract card data using OCR service (pass base64 directly — no file system needed)
+      const extracted = await OCRService.extractCard(photo.base64);
       
       setIsProcessing(false);
-      
+
+      // If no text was extracted (e.g. no API key configured), inform the user
+      const hasAnyData =
+        extracted.name || extracted.email || extracted.phone || extracted.company;
+      if (!hasAnyData) {
+        Alert.alert(
+          'Card Captured',
+          'OCR could not read text from this card. The image may be blurry or low-contrast. ' +
+            'You can fill in the contact details manually.',
+          [{
+            text: 'Fill in Manually',
+            onPress: () =>
+              navigation.navigate('FieldReview', { extracted, imageUri: photo.uri }),
+          }],
+        );
+        return;
+      }
+
       // Navigate to field review screen with extracted data
       navigation.navigate('FieldReview', {
         extracted,
@@ -104,9 +129,8 @@ export default function ScanScreen({ navigation }: any) {
 
         <CameraView
           ref={cameraRef}
-          type={cameraType}
+          facing={facing}
           style={styles.camera}
-          facing="back"
         >
           {/* Camera Frame Overlay */}
           <View style={styles.overlay}>
@@ -124,7 +148,7 @@ export default function ScanScreen({ navigation }: any) {
             <TouchableOpacity
               style={styles.flipButton}
               onPress={() =>
-                setCameraType((t) => (t === 'back' ? 'front' : 'back'))
+                setFacing((f) => (f === 'back' ? 'front' : 'back'))
               }
               disabled={isTakingPhoto || isProcessing}
             >
@@ -162,7 +186,10 @@ const styles = StyleSheet.create({
   },
   overlay: {
     position: 'absolute',
-    inset: 0,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -33,6 +33,10 @@ export default function FieldReviewScreen({ route, navigation }: any) {
   );
   const [isChecking, setIsChecking] = useState(false);
 
+  // True when no text was extracted from the card at all
+  const isManualEntry =
+    !extracted.rawText || extracted.rawText.trim().length === 0;
+
   React.useEffect(() => {
     checkForDuplicates();
   }, []);
@@ -67,15 +71,7 @@ export default function FieldReviewScreen({ route, navigation }: any) {
           {
             text: 'View Existing',
             onPress: () => {
-              navigation.reset({
-                index: 0,
-                routes: [
-                  {
-                    name: 'LeadDetail',
-                    params: { lead: duplicateCheck.existing },
-                  },
-                ],
-              });
+              navigation.navigate('LeadDetail', { lead: duplicateCheck.existing });
             },
           },
           { text: 'Back', style: 'cancel' },
@@ -124,7 +120,7 @@ export default function FieldReviewScreen({ route, navigation }: any) {
           onPress: () => {
             navigation.reset({
               index: 0,
-              routes: [{ name: 'Leads' }],
+              routes: [{ name: 'Main' }],
             });
           },
           style: 'default',
@@ -161,7 +157,7 @@ export default function FieldReviewScreen({ route, navigation }: any) {
           onPress: () => {
             navigation.reset({
               index: 0,
-              routes: [{ name: 'Leads' }],
+              routes: [{ name: 'Main' }],
             });
           },
           style: 'default',
@@ -188,26 +184,29 @@ export default function FieldReviewScreen({ route, navigation }: any) {
   ) => {
     const value = String(lead[fieldKey] || '');
     const isConfident = confidence >= 0.85;
+    const showConfidence = confidence > 0; // hide badge when OCR had no data
 
     return (
       <View key={fieldKey} style={styles.fieldContainer}>
         <View style={styles.fieldHeader}>
           <Text style={styles.fieldLabel}>{label}</Text>
-          <View style={styles.confidenceRow}>
-            <View
-              style={[
-                styles.confidenceBadge,
-                { backgroundColor: getConfidenceColor(confidence) },
-              ]}
-            >
-              <Text style={styles.confidenceText}>
-                {Math.round(confidence * 100)}%
-              </Text>
+          {showConfidence && (
+            <View style={styles.confidenceRow}>
+              <View
+                style={[
+                  styles.confidenceBadge,
+                  { backgroundColor: getConfidenceColor(confidence) },
+                ]}
+              >
+                <Text style={styles.confidenceText}>
+                  {Math.round(confidence * 100)}%
+                </Text>
+              </View>
+              {!isConfident && (
+                <Icon name="alert-circle" size={16} color={EVA.orange} />
+              )}
             </View>
-            {!isConfident && (
-              <Icon name="alert-circle" size={16} color={EVA.orange} />
-            )}
-          </View>
+          )}
         </View>
         <TextInput
           style={styles.input}
@@ -224,7 +223,7 @@ export default function FieldReviewScreen({ route, navigation }: any) {
     <SafeAreaView style={{ flex: 1, backgroundColor: EVA.bgColor }}>
       <AppBar
         title="Review & Edit"
-        subtitle="Confirm extracted information"
+        sub="Confirm extracted information"
         left={
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Icon name="arrow-left" size={20} color={EVA.greenInk} />
@@ -233,6 +232,16 @@ export default function FieldReviewScreen({ route, navigation }: any) {
       />
 
       <ScrollView style={styles.container}>
+        {/* Manual entry banner */}
+        {isManualEntry && (
+          <Card style={[styles.statusCard, { backgroundColor: EVA.green + '15' }]}>
+            <Icon name="camera" size={20} color={EVA.green} />
+            <Text style={[styles.statusText, { color: EVA.green, marginLeft: 8 }]}>
+              Card captured! Fill in the details below.
+            </Text>
+          </Card>
+        )}
+
         {/* Duplicate Status */}
         {isChecking && (
           <Card style={styles.statusCard}>

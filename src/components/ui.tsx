@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { EVA } from '../utils/theme';
 
 const { width } = Dimensions.get('window');
@@ -43,6 +43,15 @@ export const Icon: React.FC<IconProps> = ({ name, size = 20, color = EVA.ink }) 
     warn: '⚠',
     refresh: '🔄',
     whats: '💬',
+    // Missing icons added:
+    camera: '📷',
+    'arrow-left': '←',
+    'check-circle': '✅',
+    'alert-circle': '⚠️',
+    map: '📍',
+    call: '📞',
+    email: '📧',
+    status: '🔖',
   };
 
   return (
@@ -102,21 +111,28 @@ export const Button: React.FC<ButtonProps> = ({
     lg: { paddingVertical: 16, paddingHorizontal: 20, fontSize: 16 },
   };
 
+  const isDisabled = disabled;
+
   return (
-    <View
-      style={{
-        ...baseStyle,
-        ...kinds[kind],
-        ...sizes[size],
-        opacity: disabled ? 0.5 : 1,
-        width: full ? '100%' : 'auto',
-        ...style,
-      }}
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={isDisabled}
+      activeOpacity={0.75}
+      style={[
+        {
+          ...baseStyle,
+          ...kinds[kind],
+          ...sizes[size],
+          opacity: isDisabled ? 0.5 : 1,
+          width: full ? '100%' : 'auto',
+        },
+        style,
+      ]}
     >
       <Text style={{ color: kinds[kind].color, fontWeight: '600', fontSize: sizes[size].fontSize }}>
         {title}
       </Text>
-    </View>
+    </TouchableOpacity>
   );
 };
 

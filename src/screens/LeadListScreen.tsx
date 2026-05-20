@@ -82,11 +82,9 @@ export default function LeadListScreen({ navigation }: any) {
             </Text>
           </View>
         </View>
-        <View style={styles.leadMeta}>
-          <Text style={styles.leadMeta}>
-            {item.capturedAt} • {item.capturedBy}
-          </Text>
-        </View>
+        <Text style={styles.leadMeta}>
+          {item.capturedAt} • {item.capturedBy}
+        </Text>
         {item.tags.length > 0 && (
           <View style={styles.tagsRow}>
             {item.tags.slice(0, 2).map((tag) => (
@@ -125,7 +123,12 @@ export default function LeadListScreen({ navigation }: any) {
         </View>
 
         {/* Filter Tabs */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterTabs}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterTabs}
+          contentContainerStyle={{ flexDirection: 'row', gap: 8, paddingRight: 8 }}
+        >
           {[
             { key: null, label: 'All' },
             { key: 'new', label: 'New' },
