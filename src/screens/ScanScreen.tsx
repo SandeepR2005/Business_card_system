@@ -6,16 +6,19 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { EVA } from '../utils/theme';
 import { Icon, AppBar } from '../components/ui';
+import OCRService from '../utils/ocr';
 
 export default function ScanScreen({ navigation }: any) {
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraType, setCameraType] = useState<CameraType>('back');
   const cameraRef = useRef<CameraView>(null);
   const [isTakingPhoto, setIsTakingPhoto] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   React.useEffect(() => {
     if (permission && !permission.granted && permission.canAskAgain) {
@@ -24,17 +27,34 @@ export default function ScanScreen({ navigation }: any) {
   }, [permission]);
 
   const takePicture = async () => {
-    if (!cameraRef.current || isTakingPhoto) return;
+    if (!cameraRef.current || isTakingPhoto || isProcessing) return;
 
     try {
       setIsTakingPhoto(true);
       const photo = await cameraRef.current.takePictureAsync();
-      // In a real app, you'd process this image with OCR
-      Alert.alert('Success', 'Card captured! Processing...', [
-        { text: 'Continue', onPress: () => navigation.goBack() },
-      ]);
+      
+      if (!photo?.uri) {
+        Alert.alert('Error', 'Failed to capture image');
+        return;
+      }
+
+      // Show processing indicator
+      setIsProcessing(true);
+      
+      // Extract card data using OCR service
+      const extracted = await OCRService.extractCard(photo.uri);
+      
+      setIsProcessing(false);
+      
+      // Navigate to field review screen with extracted data
+      navigation.navigate('FieldReview', {
+        extracted,
+        imageUri: photo.uri,
+      });
     } catch (error) {
-      Alert.alert('Error', 'Failed to capture image');
+      setIsProcessing(false);
+      Alert.alert('Error', 'Failed to process card. Please try again.');
+      console.error('OCR Error:', error);
     } finally {
       setIsTakingPhoto(false);
     }
@@ -106,6 +126,7 @@ export default function ScanScreen({ navigation }: any) {
               onPress={() =>
                 setCameraType((t) => (t === 'back' ? 'front' : 'back'))
               }
+              disabled={isTakingPhoto || isProcessing}
             >
               <Icon name="refresh" size={20} color="#fff" />
             </TouchableOpacity>
@@ -113,9 +134,13 @@ export default function ScanScreen({ navigation }: any) {
             <TouchableOpacity
               style={styles.captureButton}
               onPress={takePicture}
-              disabled={isTakingPhoto}
+              disabled={isTakingPhoto || isProcessing}
             >
-              <View style={styles.captureInner} />
+              {isProcessing ? (
+                <ActivityIndicator size="large" color={EVA.green} />
+              ) : (
+                <View style={styles.captureInner} />
+              )}
             </TouchableOpacity>
 
             <View style={{ width: 56 }} />

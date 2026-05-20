@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,15 +9,36 @@ import {
   TextInput,
   FlatList,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { EVA } from '../utils/theme';
 import { AppBar, Icon, Card, Chip } from '../components/ui';
-import { SEED_LEADS } from '../utils/data';
 import { Lead } from '../types';
+import StorageService from '../utils/storage';
 
 export default function LeadListScreen({ navigation }: any) {
-  const [leads, setLeads] = useState<Lead[]>(SEED_LEADS);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [searchText, setSearchText] = useState('');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load leads from storage when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      const loadLeads = async () => {
+        try {
+          setIsLoading(true);
+          const storedLeads = await StorageService.getLeads();
+          setLeads(storedLeads);
+        } catch (error) {
+          console.error('Error loading leads:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      loadLeads();
+    }, []),
+  );
 
   const filtered = leads.filter((lead) => {
     const matchesSearch =
@@ -141,7 +162,9 @@ export default function LeadListScreen({ navigation }: any) {
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Icon name="search" size={32} color={EVA.muted} />
-              <Text style={styles.emptyText}>No leads found</Text>
+              <Text style={styles.emptyText}>
+                {isLoading ? 'Loading leads...' : 'No leads found'}
+              </Text>
             </View>
           }
         />

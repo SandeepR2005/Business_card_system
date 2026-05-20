@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,12 +9,53 @@ import {
 } from 'react-native';
 import { EVA } from '../utils/theme';
 import { AppBar, Icon, Card, Chip } from '../components/ui';
-import { SEED_LEADS } from '../utils/data';
 import { Lead } from '../types';
+import StorageService from '../utils/storage';
 
 export default function LeadDetailScreen({ route, navigation }: any) {
-  const { leadId } = route.params;
-  const lead = SEED_LEADS.find((l) => l.id === leadId);
+  const { leadId, lead: passedLead } = route.params || {};
+  const [lead, setLead] = useState<Lead | null>(passedLead || null);
+  const [isLoading, setIsLoading] = useState(!passedLead);
+
+  useEffect(() => {
+    if (passedLead) {
+      setLead(passedLead);
+    } else if (leadId) {
+      // Load lead from storage by ID
+      const loadLead = async () => {
+        try {
+          const leads = await StorageService.getLeads();
+          const foundLead = leads.find((l) => l.id === leadId);
+          if (foundLead) {
+            setLead(foundLead);
+          }
+        } catch (error) {
+          console.error('Error loading lead:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      loadLead();
+    }
+  }, [leadId, passedLead]);
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: EVA.surface }}>
+        <AppBar
+          title="Lead"
+          left={
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Icon name="chevL" size={20} color={EVA.muted} />
+            </TouchableOpacity>
+          }
+        />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: EVA.muted }}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (!lead) {
     return (

@@ -11,9 +11,11 @@ import ScanScreen from './screens/ScanScreen';
 import LeadDetailScreen from './screens/LeadDetailScreen';
 import MyCardScreen from './screens/MyCardScreen';
 import LMSScreen from './screens/LMSScreen';
+import FieldReviewScreen from './screens/FieldReviewScreen';
 
 import { Icon } from './components/ui';
 import { EVA } from './utils/theme';
+import StorageService from './utils/storage';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -79,6 +81,11 @@ function TabNavigator() {
 }
 
 export default function App() {
+  useEffect(() => {
+    // Initialize storage on app start
+    StorageService.initialize();
+  }, []);
+
   return (
     <NavigationContainer>
       <Stack.Navigator
@@ -89,7 +96,15 @@ export default function App() {
       >
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Main" component={TabNavigator} />
-        <Stack.Screen name="LeadDetail" component={LeadDetailScreen} />
+        <Stack.Group
+          screenOptions={{
+            presentation: 'card',
+            animationEnabled: true,
+          }}
+        >
+          <Stack.Screen name="LeadDetail" component={LeadDetailScreen} />
+          <Stack.Screen name="FieldReview" component={FieldReviewScreen} />
+        </Stack.Group>
       </Stack.Navigator>
       <StatusBar barStyle="light-content" />
     </NavigationContainer>
