@@ -32,8 +32,8 @@ export default function ScanScreen({ navigation }: any) {
     try {
       setIsTakingPhoto(true);
       // Request base64 from camera directly — avoids expo-file-system native module issues.
-      // quality: 0.15 compresses the photo from ~6MB → ~200-400KB, well within OCR.space's 1.5MB limit.
-      // Text remains perfectly readable for OCR at this quality.
+      // quality: 0.15 compresses the photo for efficient on-device processing.
+      // Text remains perfectly readable for LEADTOOLS recognition at this quality.
       const photo = await cameraRef.current.takePictureAsync({ base64: true, quality: 0.15 });
       
       if (!photo?.uri) {
@@ -49,19 +49,23 @@ export default function ScanScreen({ navigation }: any) {
       // Show processing indicator
       setIsProcessing(true);
       
-      // Extract card data using OCR service (pass base64 directly — no file system needed)
+      // Extract card data using LEADTOOLS OCR service (on-device)
+      // This performs:
+      // 1. Card detection & orientation correction
+      // 2. Structured field extraction with confidence scores
+      // 3. Full on-device processing — no data leaves the device
       const extracted = await OCRService.extractCard(photo.base64);
       
       setIsProcessing(false);
 
-      // If no text was extracted (e.g. no API key configured), inform the user
+      // If no data was extracted, inform the user
       const hasAnyData =
         extracted.name || extracted.email || extracted.phone || extracted.company;
       if (!hasAnyData) {
         Alert.alert(
           'Card Captured',
-          'OCR could not read text from this card. The image may be blurry or low-contrast. ' +
-            'You can fill in the contact details manually.',
+          'Could not read text from this card. The image may be blurry, poorly lit, ' +
+            'or at an odd angle. You can fill in the contact details manually.',
           [{
             text: 'Fill in Manually',
             onPress: () =>
@@ -69,6 +73,13 @@ export default function ScanScreen({ navigation }: any) {
           }],
         );
         return;
+      }
+
+      // Card data extracted successfully
+      // Show card quality indicator if available
+      if (extracted.cardQuality) {
+        const quality = Math.round(extracted.cardQuality * 100);
+        console.log(`📊 Card extraction quality: ${quality}%`);
       }
 
       // Navigate to field review screen with extracted data

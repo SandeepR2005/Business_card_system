@@ -242,6 +242,59 @@ export default function FieldReviewScreen({ route, navigation }: any) {
           </Card>
         )}
 
+        {/* Card Quality Indicator (from LEADTOOLS) */}
+        {extracted.cardQuality !== undefined && extracted.cardQuality > 0 && (
+          <Card style={[
+            styles.statusCard,
+            {
+              backgroundColor:
+                extracted.cardQuality >= 0.85 ? EVA.green + '15' :
+                extracted.cardQuality >= 0.70 ? EVA.orange + '15' :
+                EVA.red + '15'
+            }
+          ]}>
+            <View style={styles.qualityRow}>
+              <Icon
+                name={
+                  extracted.cardQuality >= 0.85 ? "check-circle" :
+                  extracted.cardQuality >= 0.70 ? "alert-circle" :
+                  "x-circle"
+                }
+                size={20}
+                color={
+                  extracted.cardQuality >= 0.85 ? EVA.green :
+                  extracted.cardQuality >= 0.70 ? EVA.orange :
+                  EVA.red
+                }
+              />
+              <View style={styles.qualityContent}>
+                <Text style={[
+                  styles.statusText,
+                  {
+                    color:
+                      extracted.cardQuality >= 0.85 ? EVA.green :
+                      extracted.cardQuality >= 0.70 ? EVA.orange :
+                      EVA.red,
+                    marginLeft: 8
+                  }
+                ]}>
+                  Card Quality: {Math.round(extracted.cardQuality * 100)}%
+                </Text>
+                <Text style={[styles.qualitySubtext, {
+                  color:
+                    extracted.cardQuality >= 0.85 ? EVA.green :
+                    extracted.cardQuality >= 0.70 ? EVA.orange :
+                    EVA.red,
+                }]}>
+                  {extracted.cardQuality >= 0.85 ? 'Excellent extraction' :
+                   extracted.cardQuality >= 0.70 ? 'Fair extraction — review carefully' :
+                   'Poor extraction — may need manual entry'}
+                </Text>
+              </View>
+            </View>
+          </Card>
+        )}
+
         {/* Duplicate Status */}
         {isChecking && (
           <Card style={styles.statusCard}>
@@ -460,5 +513,19 @@ const styles = StyleSheet.create({
   actionContainer: {
     paddingVertical: 16,
     gap: 8,
+  },
+  qualityRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingHorizontal: 4,
+  },
+  qualityContent: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  qualitySubtext: {
+    fontSize: 11,
+    marginTop: 2,
+    fontWeight: '500',
   },
 });
