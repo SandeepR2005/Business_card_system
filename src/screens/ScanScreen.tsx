@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
@@ -55,37 +54,25 @@ export default function ScanScreen({ navigation }: any) {
       // 2. Structured field extraction with confidence scores
       // 3. Full on-device processing — no data leaves the device
       const extracted = await OCRService.extractCard(photo.base64);
-      
+
       setIsProcessing(false);
 
-      // If no data was extracted, inform the user
       const hasAnyData =
         extracted.name || extracted.email || extracted.phone || extracted.company;
-      if (!hasAnyData) {
-        Alert.alert(
-          'Card Captured',
-          'Could not read text from this card. The image may be blurry, poorly lit, ' +
-            'or at an odd angle. You can fill in the contact details manually.',
-          [{
-            text: 'Fill in Manually',
-            onPress: () =>
-              navigation.navigate('FieldReview', { extracted, imageUri: photo.uri }),
-          }],
-        );
-        return;
-      }
 
-      // Card data extracted successfully
-      // Show card quality indicator if available
-      if (extracted.cardQuality) {
-        const quality = Math.round(extracted.cardQuality * 100);
-        console.log(`📊 Card extraction quality: ${quality}%`);
-      }
+      console.log(`📊 Extraction result — hasAnyData: ${!!hasAnyData}`, {
+        name: extracted.name,
+        email: extracted.email,
+        phone: extracted.phone,
+        company: extracted.company,
+      });
 
-      // Navigate to field review screen with extracted data
+      // Always navigate to FieldReview — user can edit any field there.
+      // Pass autoFilled=false when OCR found nothing so the screen shows a hint.
       navigation.navigate('FieldReview', {
         extracted,
         imageUri: photo.uri,
+        autoFilled: !!hasAnyData,
       });
     } catch (error) {
       setIsProcessing(false);
